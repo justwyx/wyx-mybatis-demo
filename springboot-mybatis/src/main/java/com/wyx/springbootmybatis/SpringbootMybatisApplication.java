@@ -1,13 +1,13 @@
-package com.wyx.mybatiswyxframework;
+package com.wyx.springbootmybatis;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class MybatisWyxFrameworkApplication {
+public class SpringbootMybatisApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(MybatisWyxFrameworkApplication.class, args);
+		SpringApplication.run(SpringbootMybatisApplication.class, args);
 	}
 
 }
