@@ -9,6 +9,7 @@
     <modules>
         <module>jdbc-demo</module>
         <module>mybatis-base-demo</module>
+        <module>mybatis-wyx-api</module>
     </modules>
     <packaging>pom</packaging>
 

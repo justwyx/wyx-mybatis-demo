@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wyx.mybatis.api.relational.one2one.mapper.One2OneCardDAO">
+
+    <!-- 根据id查询Card，返回Card对象 -->
+    <select id="getByIdCard"
+            parameterType="string"
+            resultType="com.wyx.mybatis.api.relational.one2one.entity.One2OneCard">
+        select * from one_to_one_card where id_card = #{idCard}
+    </select>
+
+</mapper>

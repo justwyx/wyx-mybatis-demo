@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wyx.mybatis.api.relational.one2many.mapper.One2ManyClazzDAO">
+
+    <!-- 映射Clazz对象的resultMap -->
+    <resultMap type="com.wyx.mybatis.api.relational.one2many.entity.One2ManyClazz" id="clazzStudentResultMap">
+        <id property="id" column="c_id"/>
+        <result property="clazzNo" column="c_clazz_no"/>
+        <result property="name" column="c_name"/>
+        <!-- 一对多关联映射:collection fetchType="lazy"表示懒加载 -->
+        <collection property="studentList" javaType="list"
+                    column="c_clazz_no" ofType="com.wyx.mybatis.api.relational.one2many.entity.One2ManyStudent"
+                    select="com.wyx.mybatis.api.relational.one2many.mapper.One2ManyStudentDAO.listByClazzNo">
+            <id property="id" column="id"/>
+            <result property="clazzNo" column="clazz_no"/>
+            <result property="name" column="name"/>
+            <result property="sex" column="sex"/>
+        </collection>
+    </resultMap>
+
+    <!-- 获取班级信息 -->
+    <select id="getByClazzNo" parameterType="string" resultType="com.wyx.mybatis.api.relational.one2many.entity.One2ManyClazz">
+        SELECT * FROM one_to_many_clazz WHERE clazz_no = #{clazzNo}
+    </select>
+
+    <!-- 获取班级及关联的学生信息信息 -->
+    <select id="getStudentByClazzNo" parameterType="string" resultMap="clazzStudentResultMap">
+        SELECT
+            c.id as c_id,
+            c.clazz_no as c_clazz_no,
+            c.name as c_name
+        FROM
+            one_to_many_clazz c
+        WHERE
+            clazz_no = #{clazzNo}
+    </select>
+
+</mapper>

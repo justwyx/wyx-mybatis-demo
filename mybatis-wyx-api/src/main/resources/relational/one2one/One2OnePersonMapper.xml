@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wyx.mybatis.api.relational.one2one.mapper.One2OnePersonDAO">
+
+    <!-- 映射Peson对象的resultMap -->
+    <resultMap type="com.wyx.mybatis.api.relational.one2one.entity.One2OnePerson" id="personMapper">
+        <id property="id" column="id" />
+        <result property="idCard" column="id_card" />
+        <result property="nickName" column="nick_name" />
+
+        <!-- 一对一关联映射:association -->
+        <association property="card" column="id_card"
+                     select="com.wyx.mybatis.api.relational.one2one.mapper.One2OneCardDAO.getByIdCard"
+                     javaType="com.wyx.mybatis.api.relational.one2one.entity.One2OneCard" />
+    </resultMap>
+
+    <!-- 根据id查询Person，返回resultMap -->
+    <select id="getByIdCard" parameterType="string" resultMap="personMapper">
+        select * from one_to_one_person where id_card = #{idCard}
+    </select>
+
+
+</mapper>
