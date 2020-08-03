@@ -28,3 +28,16 @@ spring:
       max-active: 50
       query-timeout: 10
       validation-query: SELECT 1
+
+# 打开sql日志
+logging:
+  level:
+    com.wyx.springbootmybatis.mapper.read: debug
+    com.wyx.springbootmybatis.mapper.write: debug
+
+# mybatis分页配置
+pagehelper:
+    helperDialect: mysql
+    reasonable: true
+    supportMethodsArguments: true
+    params: count=countSql
