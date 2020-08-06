@@ -6,13 +6,15 @@
     <groupId>com.wyx</groupId>
     <artifactId>mybatis-wyx-demo</artifactId>
     <version>1.0-SNAPSHOT</version>
+
+    <packaging>pom</packaging>
+
+
     <modules>
         <module>jdbc-demo</module>
         <module>mybatis-base-demo</module>
         <module>mybatis-wyx-api</module>
+        <module>mybatis-v1-demo</module>
+        <module>mybatis-v2-demo</module>
     </modules>
-    <packaging>pom</packaging>
-
-
-
 </project>

@@ -1,15 +1,17 @@
-package com.wyx.jdbc.framework.config;
+package com.wyx.mybatis.v2.session;
+
+import com.wyx.mybatis.v2.mapping.MappedStatement;
 
 import javax.sql.DataSource;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * @Description : 用于保存数据源对象与MappedStatement对象信息
  * @author : Just wyx
- * @Description : 封装了mybatis中xml文件的所有配置信息
- * @Date : 2020/8/1
+ * @Date : 2020/8/5
  */
-public class Configuratoin {
+public class Configuration {
 	private DataSource dataSource;
 
 	private Map<String, MappedStatement> mappedStatementMap = new HashMap<>();
@@ -22,12 +24,11 @@ public class Configuratoin {
 		this.dataSource = dataSource;
 	}
 
-	public MappedStatement getMappedStatementById(String statementId) {
+	public MappedStatement getMappedStatement(String statementId) {
 		return mappedStatementMap.get(statementId);
 	}
 
-	public void  addMappedStatement(String statementId, MappedStatement mappedStatement) {
+	public void addMappedStatement(String statementId, MappedStatement mappedStatement) {
 		this.mappedStatementMap.put(statementId, mappedStatement);
 	}
-
 }

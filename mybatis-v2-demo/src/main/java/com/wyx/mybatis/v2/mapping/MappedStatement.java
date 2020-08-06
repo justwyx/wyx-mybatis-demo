@@ -1,19 +1,23 @@
-package com.wyx.jdbc.framework.config;
-
-import com.wyx.jdbc.sqlsource.SqlSource;
+package com.wyx.mybatis.v2.mapping;
 
 /**
+ * @Description :
  * @author : Just wyx
- * @Description : 封装了statement标签中的信息
- * @Date : 2020/8/1
+ * @Date : 2020/8/5
  */
 public class MappedStatement {
+	/**
+	 * namespace + id
+	 */
 	private String statementId;
 
 	private String statementType;
 
 	private String resultType;
 
+	/**
+	 * 返回结果类型
+	 */
 	private Class resultTypeClass;
 
 	private SqlSource sqlSource;
@@ -90,4 +94,5 @@ public class MappedStatement {
 	public SqlSource getSqlSource() {
 		return sqlSource;
 	}
+
 }

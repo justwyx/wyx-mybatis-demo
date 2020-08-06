@@ -1,6 +1,6 @@
-package com.wyx.jdbc.test;
+package com.wyx.mybatis.v1;
 
-import com.wyx.jdbc.entity.User;
+import com.wyx.mybatis.v1.entity.User;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.junit.Test;
 
@@ -11,22 +11,30 @@ import java.sql.*;
 import java.util.*;
 
 /**
- * @Description : 解决硬编码问题（properties文件）
- * properties文件中的内容，最终会被【加载】到Properties集合中
+ * @Description :
+ * 		解决硬编码问题（properties文件）
+ *      properties文件中的内容，最终会被【加载】到Properties集合中
  * @author : Just wyx
- * @Date : 2020/8/1
+ * @Date : 2020/8/5
  */
-public class MybatisV1 {
-	private Properties properties;
+@SuppressWarnings("all")
+public class TestV1 {
+	/**
+	 * 保存jdbc配置信息
+	 */
+	private Properties jdbcProperties;
 
 	/**
-	 * mybatisV1版本测试
-	 */
-	@Test
-	public void test() throws IOException {
-		// 加载properties文件
-		loadProperties("jdbc.properties");
+	 * 连接池对象
+ 	 */
+	private BasicDataSource basicDataSource;
 
+	@Test
+	public void testV1() throws IOException {
+		// 加载配置文件
+		loadProperties("jdbc.properties");
+		// 初始化数据库连接池
+		initJdbcDataSource();
 
 		// 执行查询
 		List<User> resultList1 = getResultList("queryById", 1);
@@ -44,32 +52,31 @@ public class MybatisV1 {
 	}
 
 	/**
-	 * (what) : 加载jdbc配置文件
-	 * (why) :
-	 * (how) :
-	 * @param location 入参
-	 * @Author : Just wyx
-	 * @Date : 10:19 2020/8/4
-	 * @return : void
+	 * 加载配置文件
 	 */
 	private void loadProperties(String location) throws IOException {
-		InputStream is = this.getClass().getClassLoader().getResourceAsStream(location);
-		properties = new Properties();
-		properties.load(is);
+		// 初始化 jdbcProperties
+		jdbcProperties = new Properties();
+		// 将jdbc.properties以流的形式加载到properties
+		jdbcProperties.load(this.getClass().getClassLoader().getResourceAsStream(location));
 	}
 
 	/**
-	 * (what) : 封装一个统一的方法进行连接获取数据
-	 * (why) :
-	 * (how) :
-	 * @param statementId
-	 * @param param 入参
-	 * @Author : Just wyx
-	 * @Date : 10:22 2020/8/4
-	 * @return : java.util.List<T>
+	 * 初始化数据库连接池
 	 */
-	public <T> List<T> getResultList(String statementId, Object param) {
-		// 返回结果集对象
+	private void initJdbcDataSource() {
+		basicDataSource = new BasicDataSource();
+		basicDataSource.setDriverClassName(jdbcProperties.getProperty("db.driver"));
+		basicDataSource.setUrl(jdbcProperties.getProperty("db.url"));
+		basicDataSource.setUsername(jdbcProperties.getProperty("db.username"));
+		basicDataSource.setPassword(jdbcProperties.getProperty("db.password"));
+	}
+
+	/**
+	 * 封装统一执行方法
+	 */
+	private <T> List<T> getResultList(String statementId, Object param) {
+		// 声明返回对象
 		List<T> resultList = new ArrayList<>();
 		// 连接对象
 		Connection connection;
@@ -77,20 +84,11 @@ public class MybatisV1 {
 		PreparedStatement statement = null;
 		// 结果集对象
 		ResultSet resultSet = null;
-
-		// 解决连接获取时的硬编码问题和频繁连接的问题
-		BasicDataSource basicDataSource = new BasicDataSource();
-		basicDataSource.setDriverClassName(properties.getProperty("db.driver"));
-		basicDataSource.setUrl(properties.getProperty("db.url"));
-		basicDataSource.setUsername(properties.getProperty("db.username"));
-		basicDataSource.setPassword(properties.getProperty("db.password"));
-
 		try {
 			// 通过连接池获取数据库连接
 			connection = basicDataSource.getConnection();
-
 			// 获取sql
-			String sql = properties.getProperty("db.sql." + statementId);
+			String sql = jdbcProperties.getProperty("db.sql." + statementId);
 			// 进行预编译
 			statement = connection.prepareStatement(sql);
 			// 参数赋值
@@ -99,22 +97,19 @@ public class MybatisV1 {
 			} else if (param instanceof Map) {
 				Map<String, Object> paramMap = (Map)param;
 				// 获取入参顺序
-				String columnnames = properties.getProperty("db.sql." + statementId + ".columnnames");
+				String columnnames = jdbcProperties.getProperty("db.sql." + statementId + ".columnnames");
 				String[] columnnameArray = columnnames.split(",");
 				for (int i = 0; i < columnnameArray.length; i++) {
 					statement.setObject(i + 1, paramMap.get(columnnameArray[i]));
 				}
 			} else {
-				// todo
+				// todo 其它参数类型暂未处理
 			}
-
 			// 执行sql，获取返回结果
 			resultSet = statement.executeQuery();
-
 			// 获取返回的结果集对象
-			String resultType = properties.getProperty("db.sql." + statementId + ".resulttype");
+			String resultType = jdbcProperties.getProperty("db.sql." + statementId + ".resulttype");
 			Class<?> clazz = Class.forName(resultType);
-
 			// 单个结果对象
 			Object result;
 			// 循环为结果集对象赋值
@@ -141,21 +136,20 @@ public class MybatisV1 {
 		} catch (Exception e) {
 			e.printStackTrace();
 		} finally {
-			//释放资源,由于connection现在连接池管理，不需要手动释放
+			/**
+			 * 释放资源,由于connection现在连接池管理，不需要手动释放
+			 * 其它资源继续逆向释放
+			 */
 			if (resultSet != null) {
 				try {
 					resultSet.close();
 				} catch (SQLException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
 				}
 			}
 			if (statement != null) {
 				try {
 					statement.close();
 				} catch (SQLException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
 				}
 			}
 		}

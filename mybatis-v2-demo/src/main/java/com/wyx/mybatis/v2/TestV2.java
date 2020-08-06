@@ -1,42 +1,41 @@
-package com.wyx.jdbc.test;
+package com.wyx.mybatis.v2;
 
-import com.wyx.jdbc.entity.User;
-import com.wyx.jdbc.framework.config.Configuratoin;
-import com.wyx.jdbc.framework.config.MappedStatement;
-import com.wyx.jdbc.framework.config.ParameterMapping;
-import com.wyx.jdbc.sqlnode.*;
-import com.wyx.jdbc.sqlsource.DynamicSqlSource;
-import com.wyx.jdbc.sqlsource.RawSqlSource;
-import com.wyx.jdbc.sqlsource.SqlSource;
+import com.wyx.mybatis.v2.entity.User;
+import com.wyx.mybatis.v2.mapping.MappedStatement;
+import com.wyx.mybatis.v2.mapping.ParameterMapping;
+import com.wyx.mybatis.v2.mapping.SqlSource;
+import com.wyx.mybatis.v2.scripting.defaults.RawSqlSource;
+import com.wyx.mybatis.v2.scripting.xmltags.*;
+import com.wyx.mybatis.v2.session.Configuration;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.dom4j.*;
 import org.dom4j.io.SAXReader;
 import org.junit.Test;
 
-import javax.sql.DataSource;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.sql.*;
 import java.util.*;
 
-
 /**
- * @author : Just wyx
  * @Description :
  * 1.properties配置文件升级为XML配置文件
  * 2.使用面向过程思维去优化代码
  * 3.使用面向对象思维去理解配置文件封装的类的作用
- * @Date : 2020/8/1
+ * @author : Just wyx
+ * @Date : 2020/8/5
  */
-public class MybatisV2 {
-	private Configuratoin configuration;
+@SuppressWarnings("all")
+public class TestV2 {
+
+	private Configuration configuration;
 
 	private String namespace;
 
 	private boolean isDynamic = false;
 
 	@Test
-	public void test() {
+	public void testV2() {
 		// 加载xml文件（全局配置文件及SQL映射文件）
 		loadXML("mybatis-config.xml");
 
@@ -44,13 +43,11 @@ public class MybatisV2 {
 		Map<String, Object> paramMap = new HashMap<>();
 		paramMap.put("sex", 2);
 		paramMap.put("username", "王五");
-		List<User> userList = getData("test.queryUserByParams", paramMap);
+		List<User> userList = getResultList("test.queryUserByParams", paramMap);
 		System.out.println(userList);
 	}
-
 	private void loadXML(String location) {
-		configuration = new Configuratoin();
-		// todo 解析xml文件,最终将信息封装到configuration对象中
+		configuration = new Configuration();
 		// 获取全局配置文件对应的流对象
 		InputStream is = getResourceAsStream(location);
 		// 获取 document对象
@@ -277,7 +274,7 @@ public class MybatisV2 {
 					//递归去解析子元素
 					SqlNode sqlNode = parseDynamicTags(element);
 
-					sqlNodeList.add(new IfSqlNode(test, sqlNode));
+					sqlNodeList.add(new IfSqlNode(sqlNode, test));
 				} else {
 					// TODO 其它标签
 				}
@@ -291,56 +288,98 @@ public class MybatisV2 {
 		return new MixedSqlNode(sqlNodeList);
 	}
 
-
-	public <T> List<T> getData(String statementId, Object param) {
+	public <T> List<T> getResultList(String statementId, Object param) {
+		// 声明返回对象
 		List<T> resultList = new ArrayList<>();
-		// 数据库连接
+		// 连接对象
 		Connection connection;
-		// 预编译的Statement，使用预编译的Statement提高数据库性能
+		// 预处理对象
 		Statement statement = null;
-		// 结果集
+		// 结果集对象
 		ResultSet resultSet = null;
-
 		try {
-			// 连接获取
-			MappedStatement mappedStatement = configuration.getMappedStatementById(statementId);
-			connection = getConnection();
-			// sql获取
+			// 通过连接池获取数据库连接
+			connection = configuration.getDataSource().getConnection();
+			// 获取mappedStatement对象
+			MappedStatement mappedStatement = configuration.getMappedStatement(statementId);
+			// 获取sql,此时的sql已经${}替换
 			String sql = mappedStatement.getSqlSource().getBoundSql(param).getSql();
-
-			// 创建Statement
+			// 创建 statement
 			statement = createStatement(mappedStatement, sql, connection);
-
 			// 设置参数
 			setParameters(param, statement, mappedStatement.getSqlSource().getBoundSql(param).getParameterMappings());
-
 			// 执行Statement
 			resultSet = executeQuery(statement);
-
 			// 获取结果
 			handleResult(resultSet, mappedStatement, resultList);
 		} catch (Exception e) {
 			e.printStackTrace();
 		} finally {
-			//释放资源
+			/**
+			 * 释放资源,由于connection现在连接池管理，不需要手动释放
+			 * 其它资源继续逆向释放
+			 */
 			if (resultSet != null) {
 				try {
 					resultSet.close();
 				} catch (SQLException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
 				}
 			}
 			if (statement != null) {
 				try {
 					statement.close();
 				} catch (SQLException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
 				}
 			}
 		}
 		return resultList;
+	}
+
+	private Statement createStatement(MappedStatement mappedStatement, String sql, Connection connection) throws SQLException {
+		String statementType = mappedStatement.getStatementType();
+		if ("prepared".equals(statementType)) {
+			return connection.prepareStatement(sql);
+		} else {
+			// todo 其它类型
+		}
+		return null;
+	}
+
+	private void setParameters(Object param, Statement statement,List<ParameterMapping> list) throws SQLException {
+		if (statement instanceof PreparedStatement) {
+			PreparedStatement preparedStatement = (PreparedStatement) statement;
+			if (param instanceof Integer || param instanceof String) {
+				// 设置参数，第一个参数为sql语句中参数的序号（从1开始），第二个参数为设置的参数值
+				preparedStatement.setObject(1, param);
+			} else if (param instanceof Map) {
+				Map<String, Object> map = (Map<String, Object>) param;
+
+				// 解析#{}之后封装的参数集合List<ParameterMapping>
+				for (int i = 0; i < list.size(); i++) {
+					ParameterMapping parameterMapping = list.get(i);
+					String name = parameterMapping.getProperty();
+					Object value = map.get(name);
+					// 给map集合中的参数赋值
+					preparedStatement.setObject(i + 1, value);
+				}
+
+			} else {
+				//
+			}
+		} else {
+			// todo
+		}
+
+	}
+
+	private ResultSet executeQuery(Statement statement) throws SQLException {
+
+		if (statement instanceof PreparedStatement) {
+			PreparedStatement preparedStatement = (PreparedStatement) statement;
+			return preparedStatement.executeQuery();
+		}
+
+		return null;
 	}
 
 	private <T> void handleResult(ResultSet resultSet, MappedStatement mappedStatement, List<T> resultList) throws SQLException, IllegalAccessException, InstantiationException, NoSuchFieldException {
@@ -363,60 +402,6 @@ public class MybatisV2 {
 			}
 			resultList.add((T) result);
 		}
-	}
-
-	private ResultSet executeQuery(Statement statement) throws SQLException {
-
-		if (statement instanceof PreparedStatement) {
-			PreparedStatement preparedStatement = (PreparedStatement) statement;
-			return preparedStatement.executeQuery();
-		}
-
-		return null;
-	}
-
-	private void setParameters(Object param, Statement statement,List<ParameterMapping> list) throws SQLException {
-		if (statement instanceof PreparedStatement) {
-			PreparedStatement preparedStatement = (PreparedStatement) statement;
-			if (param instanceof Integer || param instanceof String) {
-				// 设置参数，第一个参数为sql语句中参数的序号（从1开始），第二个参数为设置的参数值
-				preparedStatement.setObject(1, param);
-			} else if (param instanceof Map) {
-				Map<String, Object> map = (Map<String, Object>) param;
-
-				// todo 需要解析#{}之后封装的参数集合List<ParameterMapping>
-				List<ParameterMapping> parameterMappings = list;
-				for (int i = 0; i < parameterMappings.size(); i++) {
-					ParameterMapping parameterMapping = parameterMappings.get(i);
-					String name = parameterMapping.getName();
-					Object value = map.get(name);
-					// 给map集合中的参数赋值
-					preparedStatement.setObject(i + 1, value);
-				}
-
-			} else {
-				//
-			}
-		} else {
-			// todo
-		}
-
-	}
-
-	private Statement createStatement(MappedStatement mappedStatement, String sql, Connection connection) throws SQLException {
-		String statementType = mappedStatement.getStatementType();
-		if ("prepared".equals(statementType)) {
-			return connection.prepareStatement(sql);
-		} else {
-			// todo 其它类型
-		}
-		return null;
-	}
-
-
-	private Connection getConnection() throws SQLException {
-		DataSource dataSource = configuration.getDataSource();
-		return dataSource.getConnection();
 	}
 
 }
