@@ -21,9 +21,6 @@ public class DynamicSqlSource implements SqlSource {
 
 	@Override
 	public BoundSql getBoundSql(Object parameterObject) {
-		/**
-		 * 处理所有sql节点,封装成一个静态的sqlSource
-		 */
 		// 需要将${}和动态sql语句进行替换,需要根据入参进行处理
 		DynamicContext context = new DynamicContext(parameterObject);
 		mixedSqlNode.apply(context);
