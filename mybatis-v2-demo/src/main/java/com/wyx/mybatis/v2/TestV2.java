@@ -47,6 +47,7 @@ public class TestV2 {
 		System.out.println(userList);
 	}
 	private void loadXML(String location) {
+
 		configuration = new Configuration();
 		// 获取全局配置文件对应的流对象
 		InputStream is = getResourceAsStream(location);

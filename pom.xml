@@ -16,5 +16,6 @@
         <module>mybatis-wyx-api</module>
         <module>mybatis-v1-demo</module>
         <module>mybatis-v2-demo</module>
+        <module>mybatis-v3-demo</module>
     </modules>
 </project>

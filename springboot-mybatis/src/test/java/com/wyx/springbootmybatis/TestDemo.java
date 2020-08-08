@@ -5,6 +5,7 @@ import com.github.pagehelper.PageInfo;
 import com.wyx.springbootmybatis.entity.User;
 import com.wyx.springbootmybatis.mapper.read.UserReader;
 import com.wyx.springbootmybatis.pagehelper.PageBean;
+import org.apache.ibatis.io.Resources;
 import org.junit.runner.RunWith;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;

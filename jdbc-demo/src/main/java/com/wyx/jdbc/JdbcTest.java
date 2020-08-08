@@ -5,12 +5,20 @@ import org.junit.Test;
 import java.sql.*;
 
 /**
- * @Description : TODO 2020/7/25
+ * @Description : jdbc操作连接数据库
  * @author : Just wyx
  * @Date : 2020/7/25
  */
 public class JdbcTest {
 
+	/**
+	 * JDBC问题:
+	 * 1.数据库连接创建，释放频繁造成系统资源浪费，从而影响系统性能
+	 * 2.SQL语句在代码中硬编码，造成代码不易维护，实际应用中sql变化的可能较大,sql变动需要改变java代码
+	 * 3.使用PreparedStatement向有占位符号传参数存在硬编码，因为sql语句的where条件不一定，可能多也可能少
+	 * 修改sql还需要修改代码，系统不易维护
+	 * 4.对结果集解析存在硬编码(查询列名)，sql变化导致解析代码变化，系统不易维护，如果能将数据库记录封装成pojo对象解析比较方便
+	 */
 	@Test
 	public void jdbcTest() {
 		Connection connection = null;
