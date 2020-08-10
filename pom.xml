@@ -17,5 +17,6 @@
         <module>mybatis-v1-demo</module>
         <module>mybatis-v2-demo</module>
         <module>mybatis-v3-demo</module>
+        <module>mybatis-v0-jdbc</module>
     </modules>
 </project>

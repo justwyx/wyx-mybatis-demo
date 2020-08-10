@@ -1,6 +1,7 @@
 package com.wyx.mybatis.v3.scripting.xmltags;
 
 
+import com.wyx.mybatis.v3.builder.SqlSourceBuilder;
 import com.wyx.mybatis.v3.mapping.BoundSql;
 import com.wyx.mybatis.v3.mapping.SqlSource;
 import com.wyx.mybatis.v3.session.Configuration;
@@ -17,7 +18,7 @@ public class DynamicSqlSource implements SqlSource {
 
 	private final SqlNode rootSqlNode;
 
-	public DynamicSqlSource(Configuration configuration, SqlNode rootSqlNode) {
+	public DynamicSqlSource(SqlNode rootSqlNode) {
 //		this.configuration = configuration;
 		this.rootSqlNode = rootSqlNode;
 	}
@@ -29,14 +30,11 @@ public class DynamicSqlSource implements SqlSource {
 		DynamicContext context = new DynamicContext(parameterObject);
 		// 将sqlNode中的sql进行组装，同时解析掉${}和动态标签
 		rootSqlNode.apply(context);
-		// 获取sqlText，此时的sqlText可能还包含#{}
-		String sqlText = context.getSql();
-		// 解析#{}，替换成占位符
-		ParameterMappingTokenHandler tokenHandler = new ParameterMappingTokenHandler();
-		GenericTokenParser tokenParser = new GenericTokenParser("#{", "}", tokenHandler);
-		// 获取解析完成的sql
-		String sql = tokenParser.parse(sqlText);
-
-		return new BoundSql(sql, tokenHandler.getParameterMappings());
+		// 获取原始Sql，此时的sqlText可能还包含#{}
+		String originalSql = context.getSql();
+		// 处理#{}
+		SqlSourceBuilder sqlSourceParser = new SqlSourceBuilder();
+		SqlSource staticSqlSource = sqlSourceParser.parse(originalSql);
+		return staticSqlSource.getBoundSql(parameterObject);
 	}
 }
