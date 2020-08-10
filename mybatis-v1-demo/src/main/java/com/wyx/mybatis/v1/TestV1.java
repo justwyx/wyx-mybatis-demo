@@ -2,6 +2,7 @@ package com.wyx.mybatis.v1;
 
 import com.wyx.mybatis.v1.entity.User;
 import org.apache.commons.dbcp.BasicDataSource;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -11,44 +12,31 @@ import java.sql.*;
 import java.util.*;
 
 /**
- * @Description :
- * 		解决硬编码问题（properties文件）
- *      properties文件中的内容，最终会被【加载】到Properties集合中
+ * @Description : 将连接信息与sql信息通过properties文件保存,解决硬编码问题
+ * properties文件中的内容，最终会被【加载】到Properties集合中
  * @author : Just wyx
  * @Date : 2020/8/5
  */
 @SuppressWarnings("all")
 public class TestV1 {
 	/**
-	 * 保存jdbc配置信息
+	 * 保存全局jdbc配置信息
 	 */
 	private Properties jdbcProperties;
-
 	/**
-	 * 连接池对象
+	 * 数据库连接池对象
  	 */
 	private BasicDataSource basicDataSource;
 
-	@Test
-	public void testV1() throws IOException {
+	/**
+	 * 启动初始化
+	 */
+	@Before
+	public void init() throws IOException {
 		// 加载配置文件
 		loadProperties("jdbc.properties");
 		// 初始化数据库连接池
 		initJdbcDataSource();
-
-		// 执行查询
-		List<User> resultList1 = getResultList("queryById", 1);
-		System.out.println("resultList1: " + resultList1);
-
-		// 执行查询
-		List<User> resultList2 = getResultList("queryByUsername", "王五");
-		System.out.println("resultList2: " + resultList2);
-
-		Map<String, Object> paramMap = new HashMap<String, Object>();
-		paramMap.put("id", 1);
-		paramMap.put("username", "王五");
-		List<User> resultList3 = getResultList("queryByIdAndUsername", paramMap);
-		System.out.println("resultList3: " + resultList3);
 	}
 
 	/**
@@ -73,39 +61,77 @@ public class TestV1 {
 	}
 
 	/**
-	 * 封装统一执行方法
+	 *v1版本问题：
+	 * 配置文件问题，property不太好表述，不方便维护动态sql
+	 *
+	 *v1优化方案：
+	 * 1.property升级成xml(增加对xml的解析)
+	 * 2.使用面向过程的方式优化代码
+	 * 3.使用面向对象思维去理解配置文件封装的类的作用
+	 *
+	 * 参照真正mybatis源码：
+	 * 将运行时的信息封装到全局配置文件中(连接信息，映射文件位置信息等)
+	 * 将需求有关的信息封装到mapper映射文件中
+	 *
 	 */
-	private <T> List<T> getResultList(String statementId, Object param) {
+	@Test
+	public void testV1() throws IOException {
+		// 执行查询
+		List<User> resultList = selectList("query", null);
+		System.out.println("resultList: " + resultList);
+
+		// 执行查询
+		List<User> resultList1 = selectList("queryById", 1);
+		System.out.println("resultList1: " + resultList1);
+
+		// 执行查询
+		List<User> resultList2 = selectList("queryByUsername", "李四");
+		System.out.println("resultList2: " + resultList2);
+
+		Map<String, Object> paramMap = new HashMap<String, Object>();
+		paramMap.put("id", 4);
+		paramMap.put("username", "李四");
+		List<User> resultList3 = selectList("queryByIdAndUsername", paramMap);
+		System.out.println("resultList3: " + resultList3);
+	}
+
+	/**
+	 * 封装统一获取结果集方法
+	 */
+	private <T> List<T> selectList(String statementId, Object param) {
 		// 声明返回对象
 		List<T> resultList = new ArrayList<>();
-		// 连接对象
-		Connection connection;
 		// 预处理对象
 		PreparedStatement statement = null;
 		// 结果集对象
 		ResultSet resultSet = null;
 		try {
 			// 通过连接池获取数据库连接
-			connection = basicDataSource.getConnection();
-			// 获取sql
+			Connection connection = basicDataSource.getConnection();
+			// 获取sql语句，?表示占位符
+			// 获取到的sql语句，例:select * from user where id = ?
 			String sql = jdbcProperties.getProperty("db.sql." + statementId);
-			// 进行预编译
+			// 使用预处理对象对sql语句进行预处理
 			statement = connection.prepareStatement(sql);
-			// 参数赋值
-			if (param instanceof Integer || param instanceof String) {
-				statement.setObject(1, param);
-			} else if (param instanceof Map) {
-				Map<String, Object> paramMap = (Map)param;
-				// 获取入参顺序
-				String columnnames = jdbcProperties.getProperty("db.sql." + statementId + ".columnnames");
-				String[] columnnameArray = columnnames.split(",");
-				for (int i = 0; i < columnnameArray.length; i++) {
-					statement.setObject(i + 1, paramMap.get(columnnameArray[i]));
+			// 没有入参不做赋值操作
+			if (param != null) {
+				// 参数赋值，针对不同的入参进行不同处理
+				if (param instanceof Integer || param instanceof String) {
+					// 简单类型不需要关注参数名称
+					statement.setObject(1, param);
+				} else if (param instanceof Map) {
+					Map<String, Object> paramMap = (Map)param;
+					// 获取入参顺序
+					String columnnames = jdbcProperties.getProperty("db.sql." + statementId + ".columnnames");
+					String[] columnnameArray = columnnames.split(",");
+					for (int i = 0; i < columnnameArray.length; i++) {
+						statement.setObject(i + 1, paramMap.get(columnnameArray[i]));
+					}
+				} else {
+					// todo 其它参数类型暂未处理或者抛出不支付数据类型异常
 				}
-			} else {
-				// todo 其它参数类型暂未处理
 			}
-			// 执行sql，获取返回结果
+			// 执行并取返回结果
 			resultSet = statement.executeQuery();
 			// 获取返回的结果集对象
 			String resultType = jdbcProperties.getProperty("db.sql." + statementId + ".resulttype");

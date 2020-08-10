@@ -11,12 +11,15 @@
 
 
     <modules>
-        <module>jdbc-demo</module>
-        <module>mybatis-base-demo</module>
-        <module>mybatis-wyx-api</module>
+
+        <module>mybatis-v0-jdbc</module>
         <module>mybatis-v1-demo</module>
         <module>mybatis-v2-demo</module>
         <module>mybatis-v3-demo</module>
-        <module>mybatis-v0-jdbc</module>
+
+        <module>mybatis-base-demo</module>
+        <module>mybatis-wyx-api</module>
+        <module>springboot-mybatis</module>
+
     </modules>
 </project>
