@@ -54,7 +54,6 @@ public class testV0 {
 				try {
 					resultSet.close();
 				} catch (SQLException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
@@ -62,7 +61,6 @@ public class testV0 {
 				try {
 					statement.close();
 				} catch (SQLException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
@@ -70,7 +68,6 @@ public class testV0 {
 				try {
 					connection.close();
 				} catch (SQLException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
